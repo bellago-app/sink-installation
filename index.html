@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>싱크볼 시공 관리</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;background:#f3f1ea;min-height:100vh;color:#1a1a1a}
+.app{max-width:900px;margin:0 auto;padding:1rem}
+.topbar{background:#fff;border:1px solid #e5e3da;border-radius:12px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:10px}
+.topbar h1{font-size:17px;font-weight:600}
+.role-toggle{display:flex;gap:6px}
+.role-btn{padding:6px 16px;border-radius:8px;border:1px solid #ddd;background:#f7f6f2;font-size:13px;cursor:pointer;color:#555}
+.role-btn.active{background:#1a56db;border-color:#1a56db;color:#fff;font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.tab{padding:8px 18px;border-radius:8px;border:1px solid #e5e3da;background:#fff;font-size:13px;cursor:pointer;color:#555}
+.tab.active{background:#1a56db;border-color:#1a56db;color:#fff;font-weight:600}
+.card{background:#fff;border:1px solid #e5e3da;border-radius:12px;padding:1.25rem;margin-bottom:1rem}
+.card-title{font-size:15px;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1rem}
+.stat{background:#f7f6f2;border-radius:8px;padding:12px;text-align:center}
+.stat-label{font-size:12px;color:#888;margin-bottom:4px}
+.stat-val{font-size:21px;font-weight:600}
+.stat-val.red{color:#c00}
+.stat-val.blue{color:#1a56db}
+.stat-val.green{color:#1a7a3a}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:8px 10px;border-bottom:2px solid #eee;color:#888;font-weight:600;font-size:12px;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+tr:hover td{background:#fafafa}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-wait{background:#fef3c7;color:#92400e}
+.badge-done{background:#d1fae5;color:#065f46}
+.badge-A{background:#dbeafe;color:#1e40af}
+.badge-B{background:#fef9c3;color:#854d0e}
+.badge-C{background:#fee2e2;color:#991b1b}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+label{font-size:12px;color:#666;font-weight:600}
+input,select,textarea{padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff;width:100%;font-family:inherit}
+textarea{resize:vertical;min-height:60px}
+.btn{padding:9px 20px;border-radius:8px;border:1px solid #ddd;font-size:13px;cursor:pointer;font-weight:600;background:#fff}
+.btn-primary{background:#1a56db;border-color:#1a56db;color:#fff}
+.btn-primary:disabled{opacity:0.5}
+.btn-sm{padding:5px 12px;font-size:12px}
+.btn-complete{background:#d1fae5;border-color:#6ee7b7;color:#065f46}
+.btn-refresh{background:#fff;border-color:#ddd;color:#555}
+.hidden{display:none}
+.notice{background:#e6f1fb;border:1px solid #b5d4f4;border-radius:8px;padding:10px 14px;font-size:13px;color:#185fa5;margin-bottom:1rem}
+.notice.error{background:#fcebeb;border-color:#f7c1c1;color:#a32d2d}
+.notice.success{background:#eaf3de;border-color:#c0dd97;color:#3b6d11}
+.settle-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f0}
+.settle-row:last-child{border-bottom:none;font-weight:600}
+.settle-label{font-size:13px;color:#666}
+.settle-val{font-size:14px;font-weight:600}
+.settle-val.red{color:#c00}
+.monthly-tabs{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
+.m-tab{padding:5px 14px;border-radius:20px;border:1px solid #e5e3da;background:#f7f6f2;font-size:12px;cursor:pointer;color:#666}
+.m-tab.active{background:#1a56db;color:#fff;border-color:#1a56db}
+.empty{text-align:center;padding:2rem;color:#aaa;font-size:13px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid #ddd;border-top-color:#1a56db;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.setup-box{background:#fff8e6;border:1px solid #f0d98c;border-radius:8px;padding:14px;font-size:13px;margin-bottom:1rem;line-height:1.6}
+.setup-box code{background:#fff;padding:2px 6px;border-radius:4px;border:1px solid #eee;font-size:12px}
+@media (max-width:640px){
+  .form-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  table{font-size:12px}
+  th,td{padding:6px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">🔧</span>
+      <h1>싱크볼 시공 관리</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-sm btn-refresh" onclick="loadJobs()">새로고침</button>
+      <div class="role-toggle">
+        <button class="role-btn active" onclick="switchRole('admin')" id="btn-admin">관리자(판매사)</button>
+        <button class="role-btn" onclick="switchRole('partner')" id="btn-partner">거래처(시공사)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="setup-box" class="setup-box hidden">
+    <b>⚙️ 최초 설정이 필요합니다</b><br>
+    이 파일 상단의 <code>API_URL</code> 값을 본인의 Google Apps Script 웹앱 URL로 변경해주세요.<br>
+    설정 전까지는 임시로 브라우저에만 저장되는 모드로 동작합니다 (새로고침 시 초기화될 수 있음).
+  </div>
+
+  <div id="status-notice" class="notice"><span class="spin"></span>데이터를 불러오는 중...</div>
+
+  <div id="admin-view">
+    <div class="tabs">
+      <button class="tab active" onclick="adminTab('dashboard')" id="atab-dashboard">현황판</button>
+      <button class="tab" onclick="adminTab('list')" id="atab-list">전체 접수 목록</button>
+      <button class="tab" onclick="adminTab('settle')" id="atab-settle">월별 정산</button>
+      <button class="tab" onclick="adminTab('new')" id="atab-new">신규 접수</button>
+    </div>
+    <div id="admin-dashboard">
+      <div class="stats" id="stats-area"></div>
+      <div class="card">
+        <div class="card-title">시공 대기 중</div>
+        <div id="waiting-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">이번 달 완료</div>
+        <div id="done-list"></div>
+      </div>
+    </div>
+    <div id="admin-list" class="hidden">
+      <div class="card">
+        <div class="card-title">전체 접수 목록 <button class="btn btn-sm" onclick="exportCSV()">CSV 내보내기</button></div>
+        <div id="all-list"></div>
+      </div>
+    </div>
+    <div id="admin-settle" class="hidden">
+      <div class="monthly-tabs" id="month-tabs"></div>
+      <div id="settle-content"></div>
+    </div>
+    <div id="admin-new" class="hidden">
+      <div class="card">
+        <div class="card-title">신규 시공 접수</div>
+        <div class="form-grid">
+          <div class="form-group"><label>고객명</label><input id="n-cust" placeholder="홍길동"/></div>
+          <div class="form-group"><label>접수일</label><input type="date" id="n-date"/></div>
+          <div class="form-group full"><label>시공 주소</label><input id="n-addr" placeholder="시/도 시/군/구 상세주소"/></div>
+          <div class="form-group"><label>제품명</label><input id="n-prod" placeholder="스텐싱크볼 1구"/></div>
+          <div class="form-group"><label>지역 구분</label>
+            <select id="n-region">
+              <option value="">선택</option>
+              <option value="A">A - 서울/경기 (보조금 없음)</option>
+              <option value="B">B - 수도권외곽/충청 (+3만원)</option>
+              <option value="C">C - 경상/전라/기타 (+5만원)</option>
+            </select>
+          </div>
+          <div class="form-group"><label>고객 수취 시공비</label><input value="150,000원" readonly style="color:#999"/></div>
+          <div class="form-group full"><label>메모</label><textarea id="n-memo" placeholder="특이사항 입력"></textarea></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:1rem">
+          <button class="btn btn-primary" onclick="addJob()" id="add-btn">접수 등록</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="partner-view" class="hidden">
+    <div class="notice">거래처 화면입니다. 배정된 시공 건을 확인하고 완료 처리해 주세요.</div>
+    <div class="tabs">
+      <button class="tab active" onclick="partnerTab('waiting')" id="ptab-waiting">대기 중</button>
+      <button class="tab" onclick="partnerTab('done')" id="ptab-done">완료 처리됨</button>
+    </div>
+    <div id="partner-waiting">
+      <div class="card">
+        <div class="card-title">시공 대기 건</div>
+        <div id="p-waiting-list"></div>
+      </div>
+    </div>
+    <div id="partner-done" class="hidden">
+      <div class="card">
+        <div class="card-title">완료 처리된 건</div>
+        <div id="p-done-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   설정: 본인의 Google Apps Script 웹앱 URL을 아래에 붙여넣으세요
+   배포 -> 웹앱 -> URL (https://script.google.com/macros/s/.../exec)
+   ========================================================= */
+var API_URL = 'YOUR_APPS_SCRIPT_URL_HERE';
+
+var today = new Date().toISOString().slice(0,10);
+var thisMonth = today.slice(0,7);
+var jobs = [];
+var busy = false;
+var subsidy = {A:0,B:30000,C:50000};
+var dealerFee = {A:150000,B:180000,C:200000};
+var useLocal = (API_URL.indexOf('YOUR_APPS_SCRIPT_URL') !== -1);
+var LOCAL_KEY = 'sinkcool_jobs';
+
+if(useLocal){ document.getElementById('setup-box').classList.remove('hidden'); }
+
+function fmt(n){ return Number(n||0).toLocaleString('ko-KR')+'원'; }
+function regionBadge(r){ return '<span class="badge badge-'+r+'">'+r+'지역</span>'; }
+function statusBadge(s){ return s==='done' ? '<span class="badge badge-done">완료</span>' : '<span class="badge badge-wait">대기</span>'; }
+function jobMonth(j){ return (j.status==='done' ? j.doneDate : j.date) || ''; }
+
+function setNotice(type, msg){
+  var el = document.getElementById('status-notice');
+  if(!msg){ el.style.display='none'; return; }
+  el.style.display='block';
+  el.className = 'notice' + (type==='error' ? ' error' : (type==='success' ? ' success' : ''));
+  el.innerHTML = msg;
+}
+
+/* ---------- 데이터 로드/저장 ---------- */
+function loadJobs(){
+  setNotice('info', '<span class="spin"></span>데이터를 불러오는 중...');
+  if(useLocal){
+    try{
+      jobs = JSON.parse(localStorage.getItem(LOCAL_KEY) || '[]');
+    }catch(e){ jobs = []; }
+    setNotice('info','');
+    render();
+    return;
+  }
+  fetch(API_URL).then(function(res){ return res.json(); }).then(function(data){
+    if(data.status!=='ok'){ throw new Error(data.message || 'load failed'); }
+    jobs = (data.jobs||[]).map(function(j){
+      return {
+        id: j.id,
+        date: String(j.date||'').slice(0,10),
+        cust: j.cust, addr: j.addr, prod: j.prod, region: j.region,
+        status: j.status || 'waiting',
+        doneDate: String(j.doneDate||'').slice(0,10),
+        memo: j.memo || ''
+      };
+    });
+    setNotice('info','');
+    render();
+  }).catch(function(err){
+    setNotice('error', '연동 오류: ' + err.message);
+  });
+}
+
+function saveLocal(){
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(jobs));
+}
+
+/* ---------- 렌더링 ---------- */
+function render(){
+  renderStats();
+  renderWaiting();
+  renderDone();
+  renderAll();
+  renderSettle();
+  renderPartnerWaiting();
+  renderPartnerDone();
+}
+
+function renderStats(){
+  var waiting = jobs.filter(function(j){ return j.status==='waiting'; }).length;
+  var doneThis = jobs.filter(function(j){ return j.status==='done' && jobMonth(j).indexOf(thisMonth)===0; }).length;
+  var subTotal = jobs.filter(function(j){ return j.status==='done' && jobMonth(j).indexOf(thisMonth)===0; })
+                      .reduce(function(s,j){ return s + (subsidy[j.region]||0); }, 0);
+  document.getElementById('stats-area').innerHTML =
+    '<div class="stat"><div class="stat-label">전체 접수</div><div class="stat-val">'+jobs.length+'건</div></div>'+
+    '<div class="stat"><div class="stat-label">시공 대기</div><div class="stat-val blue">'+waiting+'건</div></div>'+
+    '<div class="stat"><div class="stat-label">이번달 완료</div><div class="stat-val green">'+doneThis+'건</div></div>'+
+    '<div class="stat"><div class="stat-label">이번달 보조금</div><div class="stat-val red">'+fmt(subTotal)+'</div></div>';
+}
+
+function jobRow(j, showComplete){
+  var actionCell = '<td></td>';
+  if(showComplete && j.status==='waiting'){
+    actionCell = '<td><button class="btn btn-sm btn-complete" onclick="complete(\''+j.id+'\')" '+(busy?'disabled':'')+'>완료 처리</button></td>';
+  }
+  var addr = j.addr||'';
+  return '<tr>'+
+    '<td>'+(j.date||'')+'</td>'+
+    '<td>'+(j.cust||'')+'</td>'+
+    '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addr+'</td>'+
+    '<td>'+(j.prod||'')+'</td>'+
+    '<td>'+regionBadge(j.region)+'</td>'+
+    '<td>'+fmt(subsidy[j.region])+'</td>'+
+    '<td>'+statusBadge(j.status)+'</td>'+
+    '<td>'+(j.doneDate||'-')+'</td>'+
+    actionCell+
+    '</tr>';
+}
+
+function tableHead(extra){
+  return '<table><thead><tr>'+
+    '<th>접수일</th><th>고객</th><th>주소</th><th>제품</th><th>지역</th>'+
+    '<th>보조금</th><th>상태</th><th>완료일</th>'+(extra?('<th>'+extra+'</th>'):'<th></th>')+
+    '</tr></thead><tbody>';
+}
+
+function renderWaiting(){
+  var list = jobs.filter(function(j){ return j.status==='waiting'; });
+  document.getElementById('waiting-list').innerHTML = list.length ?
+    tableHead()+list.map(function(j){ return jobRow(j,false); }).join('')+'</tbody></table>' :
+    '<div class="empty">대기 중인 건이 없습니다</div>';
+}
+
+function renderDone(){
+  var list = jobs.filter(function(j){ return j.status==='done' && jobMonth(j).indexOf(thisMonth)===0; });
+  document.getElementById('done-list').innerHTML = list.length ?
+    tableHead()+list.map(function(j){ return jobRow(j,false); }).join('')+'</tbody></table>' :
+    '<div class="empty">이번 달 완료 건이 없습니다</div>';
+}
+
+function renderAll(){
+  document.getElementById('all-list').innerHTML = jobs.length ?
+    tableHead('완료처리')+jobs.map(function(j){ return jobRow(j,true); }).join('')+'</tbody></table>' :
+    '<div class="empty">접수된 건이 없습니다</div>';
+}
+
+function renderSettle(){
+  var seen = {};
+  var months = [];
+  jobs.forEach(function(j){
+    var m = jobMonth(j).slice(0,7);
+    if(m && !seen[m]){ seen[m]=true; months.push(m); }
+  });
+  months.sort().reverse();
+  var tabsEl = document.getElementById('month-tabs');
+  if(!months.length){
+    tabsEl.innerHTML='';
+    document.getElementById('settle-content').innerHTML = '<div class="empty">데이터가 없습니다</div>';
+    return;
+  }
+  tabsEl.innerHTML = months.map(function(m,i){
+    return '<button class="m-tab'+(i===0?' active':'')+'" onclick="showMonth(\''+m+'\',this)">'+m+'</button>';
+  }).join('');
+  showMonthContent(months[0]);
+}
+
+function showMonth(m, btn){
+  var tabs = document.querySelectorAll('.m-tab');
+  for(var i=0;i<tabs.length;i++){ tabs[i].classList.remove('active'); }
+  if(btn) btn.classList.add('active');
+  showMonthContent(m);
+}
+
+function showMonthContent(m){
+  var list = jobs.filter(function(j){ return j.status==='done' && jobMonth(j).slice(0,7)===m; });
+  var aList = list.filter(function(j){ return j.region==='A'; });
+  var bList = list.filter(function(j){ return j.region==='B'; });
+  var cList = list.filter(function(j){ return j.region==='C'; });
+  var totalFee = list.length * 150000;
+  var totalSub = list.reduce(function(s,j){ return s + (subsidy[j.region]||0); }, 0);
+  var totalDealer = list.reduce(function(s,j){ return s + (dealerFee[j.region]||0); }, 0);
+
+  document.getElementById('settle-content').innerHTML =
+    '<div class="card">'+
+      '<div class="card-title">'+m+' 정산 요약</div>'+
+      '<div class="stats" style="grid-template-columns:repeat(4,1fr)">'+
+        '<div class="stat"><div class="stat-label">A지역</div><div class="stat-val">'+aList.length+'건</div></div>'+
+        '<div class="stat"><div class="stat-label">B지역</div><div class="stat-val">'+bList.length+'건</div></div>'+
+        '<div class="stat"><div class="stat-label">C지역</div><div class="stat-val">'+cList.length+'건</div></div>'+
+        '<div class="stat"><div class="stat-label">총 완료</div><div class="stat-val">'+list.length+'건</div></div>'+
+      '</div>'+
+      '<div style="background:#f7f6f2;border-radius:8px;padding:1rem;margin-top:0.5rem">'+
+        '<div class="settle-row"><span class="settle-label">고객 수취 시공비 합계</span><span class="settle-val">'+fmt(totalFee)+'</span></div>'+
+        '<div class="settle-row"><span class="settle-label">우리 보조금 합계 (거래처 추가 지급)</span><span class="settle-val red">'+fmt(totalSub)+'</span></div>'+
+        '<div class="settle-row"><span class="settle-label">거래처 실 수령액 합계</span><span class="settle-val">'+fmt(totalDealer)+'</span></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="card">'+
+      '<div class="card-title">완료 건 상세</div>'+
+      (list.length ? tableHead()+list.map(function(j){ return jobRow(j,false); }).join('')+'</tbody></table>' : '<div class="empty">완료 건 없음</div>')+
+    '</div>';
+}
+
+function renderPartnerWaiting(){
+  var list = jobs.filter(function(j){ return j.status==='waiting'; });
+  if(!list.length){
+    document.getElementById('p-waiting-list').innerHTML = '<div class="empty">대기 중인 시공 건이 없습니다</div>';
+    return;
+  }
+  var rows = list.map(function(j){
+    var addr = j.addr||'';
+    return '<tr>'+
+      '<td>'+(j.date||'')+'</td><td>'+(j.cust||'')+'</td>'+
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addr+'</td>'+
+      '<td>'+(j.prod||'')+'</td><td>'+regionBadge(j.region)+'</td>'+
+      '<td>'+fmt(dealerFee[j.region])+'</td>'+
+      '<td>'+statusBadge(j.status)+'</td><td>-</td>'+
+      '<td><button class="btn btn-sm btn-complete" onclick="complete(\''+j.id+'\')" '+(busy?'disabled':'')+'>완료 처리</button></td>'+
+      '</tr>';
+  }).join('');
+  document.getElementById('p-waiting-list').innerHTML = tableHead('완료처리')+rows+'</tbody></table>';
+}
+
+function renderPartnerDone(){
+  var list = jobs.filter(function(j){ return j.status==='done'; });
+  document.getElementById('p-done-list').innerHTML = list.length ?
+    tableHead()+list.map(function(j){ return jobRow(j,false); }).join('')+'</tbody></table>' :
+    '<div class="empty">완료 처리된 건이 없습니다</div>';
+}
+
+/* ---------- 액션 ---------- */
+function complete(id){
+  if(busy) return;
+  busy = true;
+  render();
+
+  if(useLocal){
+    var job = jobs.find(function(j){ return j.id===id; });
+    if(job){ job.status='done'; job.doneDate=today; saveLocal(); }
+    busy = false;
+    render();
+    return;
+  }
+
+  fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'complete', id:id, doneDate: today})
+  }).then(function(res){ return res.json(); }).then(function(data){
+    if(data.status!=='ok'){ throw new Error(data.message||'complete failed'); }
+    return loadJobs();
+  }).catch(function(err){
+    setNotice('error', '완료 처리 오류: ' + err.message);
+  }).then(function(){
+    busy = false;
+    render();
+  });
+}
+
+function addJob(){
+  var cust = document.getElementById('n-cust').value.trim();
+  var date = document.getElementById('n-date').value || today;
+  var addr = document.getElementById('n-addr').value.trim();
+  var prod = document.getElementById('n-prod').value.trim() || '스텐싱크볼';
+  var region = document.getElementById('n-region').value;
+  var memo = document.getElementById('n-memo').value.trim();
+  if(!cust || !addr || !region){ alert('고객명, 주소, 지역 구분은 필수입니다.'); return; }
+  if(busy) return;
+  busy = true;
+  var btn = document.getElementById('add-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>등록 중...';
+
+  function resetForm(){
+    document.getElementById('n-cust').value='';
+    document.getElementById('n-addr').value='';
+    document.getElementById('n-prod').value='';
+    document.getElementById('n-region').value='';
+    document.getElementById('n-memo').value='';
+  }
+  function finish(){
+    busy = false;
+    btn.disabled = false;
+    btn.innerHTML = '접수 등록';
+  }
+
+  if(useLocal){
+    var id = 'j' + Date.now() + Math.floor(Math.random()*1000);
+    jobs.push({id:id, date:date, cust:cust, addr:addr, prod:prod, region:region, status:'waiting', doneDate:'', memo:memo});
+    saveLocal();
+    resetForm();
+    render();
+    adminTab('dashboard');
+    setNotice('success', '접수가 등록되었습니다. (로컬 저장 모드)');
+    setTimeout(function(){ setNotice('info',''); }, 3000);
+    finish();
+    return;
+  }
+
+  fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body: JSON.stringify({action:'add', job:{date:date,cust:cust,addr:addr,prod:prod,region:region,memo:memo}})
+  }).then(function(res){ return res.json(); }).then(function(data){
+    if(data.status!=='ok'){ throw new Error(data.message||'add failed'); }
+    resetForm();
+    return loadJobs();
+  }).then(function(){
+    adminTab('dashboard');
+    setNotice('success', '접수가 등록되었습니다.');
+    setTimeout(function(){ setNotice('info',''); }, 3000);
+  }).catch(function(err){
+    setNotice('error', '등록 오류: ' + err.message);
+  }).then(finish);
+}
+
+function exportCSV(){
+  if(!jobs.length){ alert('내보낼 데이터가 없습니다.'); return; }
+  var header = ['접수일','고객명','주소','제품명','지역','고객수취시공비','보조금','거래처실수령액','상태','완료일','메모'];
+  var rows = jobs.map(function(j){
+    return [
+      j.date, j.cust, '"'+(j.addr||'').replace(/"/g,'""')+'"', j.prod, j.region,
+      150000, subsidy[j.region]||0, dealerFee[j.region]||0, j.status, j.doneDate||'', '"'+(j.memo||'').replace(/"/g,'""')+'"'
+    ].join(',');
+  });
+  var csv = '\uFEFF' + header.join(',') + '\n' + rows.join('\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '시공접수_' + today + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- 탭/역할 전환 ---------- */
+function switchRole(role){
+  document.getElementById('admin-view').classList.toggle('hidden', role!=='admin');
+  document.getElementById('partner-view').classList.toggle('hidden', role!=='partner');
+  document.getElementById('btn-admin').classList.toggle('active', role==='admin');
+  document.getElementById('btn-partner').classList.toggle('active', role==='partner');
+}
+
+function adminTab(tab){
+  ['dashboard','list','settle','new'].forEach(function(t){
+    document.getElementById('admin-'+t).classList.toggle('hidden', t!==tab);
+    document.getElementById('atab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+function partnerTab(tab){
+  ['waiting','done'].forEach(function(t){
+    document.getElementById('partner-'+t).classList.toggle('hidden', t!==tab);
+    document.getElementById('ptab-'+t).classList.toggle('active', t===tab);
+  });
+}
+
+document.getElementById('n-date').value = today;
+loadJobs();
+</script>
+</body>
+</html>
