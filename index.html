@@ -284,6 +284,13 @@ function jobRow(j, showComplete){
     '</tr>';
 }
 
+function tableHead(extra){
+  return '<table><thead><tr>'+
+    '<th>접수일</th><th>고객</th><th>주소</th><th>제품</th><th>지역</th>'+
+    '<th>보조금</th><th>상태</th><th>완료일</th>'+(extra?('<th>'+extra+'</th>'):'<th></th>')+
+    '</tr></thead><tbody>';
+}
+
 function tableHeadPartner(extra){
   return '<table><thead><tr>'+
     '<th>접수일</th><th>고객</th><th>주소</th><th>제품</th><th>지역</th>'+
