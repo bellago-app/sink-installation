@@ -79,12 +79,13 @@ textarea{resize:vertical;min-height:60px}
       <span style="font-size:20px">🔧</span>
       <h1>싱크볼 시공 관리</h1>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <button class="btn btn-sm btn-refresh" onclick="loadJobs()">새로고침</button>
-      <div class="role-toggle">
-        <button class="role-btn active" onclick="switchRole('admin')" id="btn-admin">관리자(판매사)</button>
-        <button class="role-btn" onclick="switchRole('partner')" id="btn-partner">거래처(시공사)</button>
-      </div>
+    <button class="btn btn-sm btn-refresh" onclick="loadJobs()">새로고침</button>
+  </div>
+
+  <div class="topbar" style="justify-content:flex-end">
+    <div class="role-toggle">
+      <button class="role-btn" onclick="switchRole('partner')" id="btn-partner">거래처(시공사)</button>
+      <button class="role-btn active" onclick="switchRole('admin')" id="btn-admin">관리자(판매사)</button>
     </div>
   </div>
 
@@ -178,7 +179,12 @@ textarea{resize:vertical;min-height:60px}
    ========================================================= */
 var API_URL = 'https://script.google.com/macros/s/AKfycbzEoAxtsntPTqtTQF99lqgAhYm1A0rvO5niRzktkvHA_VXKwcbMY9UenxICwNxdx5a2/exec';
 
-var today = new Date().toISOString().slice(0,10);
+function getTodayKST(){
+  var now = new Date();
+  var kst = new Date(now.getTime() + (9*60 - now.getTimezoneOffset())*60000);
+  return kst.toISOString().slice(0,10);
+}
+var today = getTodayKST();
 var thisMonth = today.slice(0,7);
 var jobs = [];
 var busy = false;
@@ -278,10 +284,10 @@ function jobRow(j, showComplete){
     '</tr>';
 }
 
-function tableHead(extra){
+function tableHeadPartner(extra){
   return '<table><thead><tr>'+
     '<th>접수일</th><th>고객</th><th>주소</th><th>제품</th><th>지역</th>'+
-    '<th>보조금</th><th>상태</th><th>완료일</th>'+(extra?('<th>'+extra+'</th>'):'<th></th>')+
+    '<th>거래처 수령액</th><th>상태</th><th>완료일</th>'+(extra?('<th>'+extra+'</th>'):'<th></th>')+
     '</tr></thead><tbody>';
 }
 
@@ -379,14 +385,27 @@ function renderPartnerWaiting(){
       '<td><button class="btn btn-sm btn-complete" onclick="complete(\''+j.id+'\')" '+(busy?'disabled':'')+'>완료 처리</button></td>'+
       '</tr>';
   }).join('');
-  document.getElementById('p-waiting-list').innerHTML = tableHead('완료처리')+rows+'</tbody></table>';
+  document.getElementById('p-waiting-list').innerHTML = tableHeadPartner('완료처리')+rows+'</tbody></table>';
 }
 
 function renderPartnerDone(){
   var list = jobs.filter(function(j){ return j.status==='done'; });
-  document.getElementById('p-done-list').innerHTML = list.length ?
-    tableHead()+list.map(function(j){ return jobRow(j,false); }).join('')+'</tbody></table>' :
-    '<div class="empty">완료 처리된 건이 없습니다</div>';
+  if(!list.length){
+    document.getElementById('p-done-list').innerHTML = '<div class="empty">완료 처리된 건이 없습니다</div>';
+    return;
+  }
+  var rows = list.map(function(j){
+    var addr = j.addr||'';
+    return '<tr>'+
+      '<td>'+(j.date||'')+'</td><td>'+(j.cust||'')+'</td>'+
+      '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addr+'</td>'+
+      '<td>'+(j.prod||'')+'</td><td>'+regionBadge(j.region)+'</td>'+
+      '<td>'+fmt(dealerFee[j.region])+'</td>'+
+      '<td>'+statusBadge(j.status)+'</td><td>'+(j.doneDate||'-')+'</td>'+
+      '<td></td>'+
+      '</tr>';
+  }).join('');
+  document.getElementById('p-done-list').innerHTML = tableHeadPartner()+rows+'</tbody></table>';
 }
 
 /* ---------- 액션 ---------- */
