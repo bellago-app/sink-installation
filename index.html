@@ -152,7 +152,7 @@ textarea{resize:vertical;min-height:60px}
   </div>
 
   <div id="partner-view" class="hidden">
-    <div class="notice">거래처 화면입니다. 배정된 시공 건을 확인하고 완료 처리해 주세요.</div>
+    <div class="notice">거래처 화면입니다. 배정된 시공 건을 확인하고 완료 처리해 주세요. (보조금은 고객 결제 시공비 15만원에 추가로 지급되는 금액입니다)</div>
     <div class="tabs">
       <button class="tab active" onclick="partnerTab('waiting')" id="ptab-waiting">대기 중</button>
       <button class="tab" onclick="partnerTab('done')" id="ptab-done">완료 처리됨</button>
@@ -294,7 +294,7 @@ function tableHead(extra){
 function tableHeadPartner(extra){
   return '<table><thead><tr>'+
     '<th>접수일</th><th>고객</th><th>주소</th><th>제품</th><th>지역</th>'+
-    '<th>거래처 수령액</th><th>상태</th><th>완료일</th>'+(extra?('<th>'+extra+'</th>'):'<th></th>')+
+    '<th>보조금</th><th>상태</th><th>완료일</th>'+(extra?('<th>'+extra+'</th>'):'<th></th>')+
     '</tr></thead><tbody>';
 }
 
@@ -387,7 +387,7 @@ function renderPartnerWaiting(){
       '<td>'+(j.date||'')+'</td><td>'+(j.cust||'')+'</td>'+
       '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addr+'</td>'+
       '<td>'+(j.prod||'')+'</td><td>'+regionBadge(j.region)+'</td>'+
-      '<td>'+fmt(dealerFee[j.region])+'</td>'+
+      '<td>'+fmt(subsidy[j.region])+'</td>'+
       '<td>'+statusBadge(j.status)+'</td><td>-</td>'+
       '<td><button class="btn btn-sm btn-complete" onclick="complete(\''+j.id+'\')" '+(busy?'disabled':'')+'>완료 처리</button></td>'+
       '</tr>';
@@ -407,7 +407,7 @@ function renderPartnerDone(){
       '<td>'+(j.date||'')+'</td><td>'+(j.cust||'')+'</td>'+
       '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+addr+'</td>'+
       '<td>'+(j.prod||'')+'</td><td>'+regionBadge(j.region)+'</td>'+
-      '<td>'+fmt(dealerFee[j.region])+'</td>'+
+      '<td>'+fmt(subsidy[j.region])+'</td>'+
       '<td>'+statusBadge(j.status)+'</td><td>'+(j.doneDate||'-')+'</td>'+
       '<td></td>'+
       '</tr>';
